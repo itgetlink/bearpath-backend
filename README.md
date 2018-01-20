@@ -1,237 +1,189 @@
-# CodeIgniter Rest Server
+[![Stories in Ready](https://badge.waffle.io/emreakay/CodeIgniter-Aauth.png?label=ready&title=Ready)](https://waffle.io/emreakay/CodeIgniter-Aauth)
+<p align="center">
+<img src="https://cloud.githubusercontent.com/assets/2417212/8925689/add409ea-34be-11e5-8e50-845da8f5b1b0.png" height="320">
+</p>
 
-[![Gitter chat](https://badges.gitter.im/chriskacerguis/codeigniter-restserver.png)](https://gitter.im/codeigniter-restserver/Lobby)
+***
+Aauth is a User Authorization Library for CodeIgniter 2.x and 3.x, which aims to make easy some essential jobs such as login, permissions and access operations. Despite its ease of use, it has also very advanced features like private messages, groupping, access management, and public access.
 
-A fully RESTful server implementation for CodeIgniter using one library, one
-config file and one controller.
+**This is Quick Start page. You can also take a look at the [detailed Documentation Wiki](https://github.com/emreakay/CodeIgniter-Aauth/wiki/_pages) to learn about other great Features**
 
-## Requirements
+### Features 
+***
+* User Management and Operations (login, logout, register, verification via e-mail, forgotten password, user ban, login DDoS protection)
+* Group Operations (creating/deleting groups, membership management)
+* Admin and Public Group support (Public permissions)
+* Permission Management (creating/deleting permissions, allow/deny groups, public permissions, permission checking)
+* Group Permissions
+* User Permissions
+* User and System Variables
+* Login DDoS Protection
+* Private Messages (between users)
+* Error Messages and Validations
+* Langugage and config file support
+* Flexible implementation
 
-1. PHP 5.4 or greater
-2. CodeIgniter 3.0+
+### What is new in Version 2
+***
+* User Permissions
+* User and System Variables
+* Login DDoS Protection
+* Updated functions (check documentation for details)
+* Bugs fixes
+* TOTP (Time-based One-time Password)
 
-_Note: for 1.7.x support download v2.2 from Downloads tab_
+### Migration
+***
+* If you are currently using Version 1, take a look at the [v1 to v2 migration page.](https://github.com/emreakay/CodeIgniter-Aauth/wiki/1%29-Migration-from-V1).
 
-## Important Update on 4.0.0
-
-Please note that version 4.0.0 is in the works, and is considered a breaking change (per SemVer).  As CI 3.1.0 now has native support for Composer, this library will be moving to be composer based.
-
-Take a look at the "development" branch to see what's up.
-
-## Installation & loading
-
-CodeIgniter Rest Server is available on [Packagist](https://packagist.org/packages/chriskacerguis/codeigniter-restserver) (using semantic versioning), and installation via composer is the recommended way to install Codeigniter Rest Server. Just add this line to your `composer.json` file:
-
-```json
-"chriskacerguis/codeigniter-restserver": "^3.0"
+### Quick Start 
+***
+Let's get started :)
+First, we will load the Aauth Library into the system
+```php
+$this->load->library("Aauth");
 ```
 
-or run
+That was easy!
 
-```sh
-composer require chriskacerguis/codeigniter-restserver
-```
-
-## Handling Requests
-
-When your controller extends from `REST_Controller`, the method names will be appended with the HTTP method used to access the request. If you're  making an HTTP `GET` call to `/books`, for instance, it would call a `Books#index_get()` method.
-
-This allows you to implement a RESTful interface easily:
+Now let's create two new users, `Frodo` and `Legolas`.
 
 ```php
-class Books extends REST_Controller
-{
-  public function index_get()
-  {
-    // Display all books
-  }
+$this->aauth->create_user('frodo@example.com','frodopass','FrodoBaggins');
+$this->aauth->create_user('legolas@example.com','legolaspass','Legolas');
+```
+   
+We now we have two users.
 
-  public function index_post()
-  {
-    // Create a new book
-  }
+OK, now we can create two groups, `hobbits` and `elves`.
+```php
+$this->aauth->create_group('hobbits');
+$this->aauth->create_group('elves');
+```  
+
+Now, let's create a user with power, Gandalf (for our example, let's assume he was given the `id` of 12).
+```php
+$this->aauth->create_user('gandalf@example.com', 'gandalfpass', 'GandalfTheGray');
+```  
+
+OK, now we have two groups and three users.
+
+Let's create two permissions `walk_unseen` and `immortality` 
+
+```php
+$this->aauth->create_perm('walk_unseen');
+$this->aauth->create_perm('immortality');
+```  
+
+Ok, now let's give accesses to our groups.  The Hobbits seem to have ability to walk unseen, so we will assign that privilage to them. The Elves have imortality, so we will assign that privilage to them.
+We will assign access with `allow_group()` function.
+
+```php
+$this->aauth->allow_group('hobbits','walk_unseen');
+$this->aauth->allow_group('elves','immortality');
+  
+  
+$this->aauth->allow_group('hobbits','immortality');
+``` 
+
+Wait a minute! Hobbits should not have `immortality`. We need to fix this, we can use `deny_group()` to remove the permission.
+
+```php
+$this->aauth->deny_group('hobbits','immortality');
+``` 
+
+Gandalf can also live forever.
+
+```php
+$this->aauth->allow_user(12,'immortality');
+``` 
+
+Ok now let's check if Hobbits have `immortality`.
+
+```php
+if($this->aauth->is_group_allowed('hobbits','immortality')){
+	echo "Hobbits are immortal";
+} else {
+	echo "Hobbits are NOT immortal";
 }
 ```
-
-`REST_Controller` also supports `PUT` and `DELETE` methods, allowing you to support a truly RESTful interface.
-
-
-Accessing parameters is also easy. Simply use the name of the HTTP verb as a method:
-
-```php
-$this->get('blah'); // GET param
-$this->post('blah'); // POST param
-$this->put('blah'); // PUT param
+Results:
+```
+Hobbits are NOT immortal
 ```
 
-The HTTP spec for DELETE requests precludes the use of parameters.  For delete requests, you can add items to the URL
+Does Gandalf have the ability to live forever?
 
 ```php
-public function index_delete($id)
-{
-	$this->response([
-		'returned from delete:' => $id,
-	]);
+if($this->aauth->is_allowed(12,'immortality')){
+	echo "Gandalf is immortal";
+} else {
+	echo "Gandalf is NOT immortal";
 }
+``` 
+Results:
+```
+Gandalf is immortal
 ```
 
-If query parameters are passed via the URL, regardless of whether it's a GET request, can be obtained by the query method:
+Since we don't accually live in Middle Earth, we are not aware of actual immortality.  Alas, we must delete the permission.
 
 ```php
-$this->query('blah'); // Query param
-```
+$this->aauth->delete_perm('immortality');
+``` 
+It is gone.
 
-## Content Types
+#### Un-authenticated Users
 
-`REST_Controller` supports a bunch of different request/response formats, including XML, JSON and serialised PHP. By default, the class will check the URL and look for a format either as an extension or as a separate segment.
-
-This means your URLs can look like this:
-```
-http://example.com/books.json
-http://example.com/books?format=json
-```
-
-This can be flaky with URI segments, so the recommend approach is using the HTTP `Accept` header:
-
-```bash
-$ curl -H "Accept: application/json" http://example.com
-```
-
-Any responses you make from the class (see [responses](#responses) for more on this) will be serialised in the designated format.
-
-## Responses
-
-The class provides a `response()` method that allows you to return data in the user's requested response format.
-
-Returning any object / array / string / whatever is easy:
+So, how about un-authenticated users?  In Aauth they are part of the `public` group. Let's give them permissions to `travel`.
+We will assume we already have a permission set up named `travel`.
 
 ```php
-public function index_get()
-{
-  $this->response($this->db->get('books')->result());
-}
-```
+$this->aauth->allow_group('public','travel');
+``` 
 
-This will automatically return an `HTTP 200 OK` response. You can specify the status code in the second parameter:
-
-```php
-public function index_post()
-  {
-    // ...create new book
-    $this->response($book, 201); // Send an HTTP 201 Created
-  }
-```
-
-If you don't specify a response code, and the data you respond with `== FALSE` (an empty array or string, for instance), the response code will automatically be set to `404 Not Found`:
+#### Admin Users
+What about the Admin users? The `Admin` user and any member of the `Admin` group is a superuser who had access everthing, There is no need to grant additional permissions.
+  
+#### User Parameters/Variables
+For each user, variables can be defined as individual key/value pairs.
 
 ```php
-$this->response([]); // HTTP 404 Not Found
-```
+$this->aauth->set_user_var("key","value");
+``` 
 
-## Configuration
+For example, if you want to store a user's phone number.
+```php
+$this->aauth->set_user_var("phone","1-507-555-1234");
+``` 
 
-You can overwrite all default configurations by creating a rest.php file in your config folder with your configs. 
-All given configurations will overwrite the default ones.
+To retreive value you will use `get_user_var()`:
+```php
+$this->aauth->get_user_var("key");
+``` 
 
-## Language
+Aauth also permits you to define System Variables.  These can be which can be accesed by all users in the system.
+```php
+$this->aauth->set_system_var("key","value");
+$this->aauth->get_system_var("key");
+``` 
 
-You can overwrite all default language files. Just add a rest_controller_lang.php to your language and overwrite the what you want.
-
-
-## Multilingual Support
-
-If your application uses language files to support multiple locales, `REST_Controller` will automatically parse the HTTP `Accept-Language` header and provide the language(s) in your actions. This information can be found in the `$this->response->lang` object:
+#### Private Messages
+OK, let's look at private messages. Frodo (`id` = 3) will send a PM to Legolas (`id` = 4);
 
 ```php
-public function __construct()
-{
-  parent::__construct();
+$this->aauth->send_pm(3,4,'New cloaks','These new cloaks are fantastic!')
+``` 
 
-  if (is_array($this->response->lang))
-  {
-    $this->load->language('application', $this->response->lang[0]);
-  }
-  else
-  {
-    $this->load->language('application', $this->response->lang);
-  }
-}
-```
+#### Banning users
 
-## Authentication
-
-This class also provides rudimentary support for HTTP basic authentication and/or the securer HTTP digest access authentication.
-
-You can enable basic authentication by setting the `$config['rest_auth']` to `'basic'`. The `$config['rest_valid_logins']` directive can then be used to set the usernames and passwords able to log in to your system. The class will automatically send all the correct headers to trigger the authentication dialogue:
-
+Frodo has broke the rules and will now need to be banned from the system.
 ```php
-$config['rest_valid_logins'] = ['username' => 'password', 'other_person' => 'secure123'];
-```
+$this->aauth->ban_user(3);
+``` 
 
-Enabling digest auth is similarly easy. Configure your desired logins in the config file like above, and set `$config['rest_auth']` to `'digest'`. The class will automatically send out the headers to enable digest auth.
+You have reached the end of the Quick Start Guide, but please take a look at the [detailed Documentation Wiki](https://github.com/emreakay/CodeIgniter-Aauth/wiki/_pages) for additional information.
 
-If you're tying this library into an AJAX endpoint where clients authenticate using PHP sessions then you may not like either of the digest nor basic authentication methods. In that case, you can tell the REST Library what PHP session variable to check for. If the variable exists, then the user is authorized. It will be up to your application to set that variable. You can define the variable in ``$config['auth_source']``.  Then tell the library to use a php session variable by setting ``$config['rest_auth']`` to ``session``.
 
-All three methods of authentication can be secured further by using an IP white-list. If you enable `$config['rest_ip_whitelist_enabled']` in your config file, you can then set a list of allowed IPs.
-
-Any client connecting to your API will be checked against the white-listed IP array. If they're on the list, they'll be allowed access. If not, sorry, no can do hombre. The whitelist is a comma-separated string:
-
-```php
-$config['rest_ip_whitelist'] = '123.456.789.0, 987.654.32.1';
-```
-
-Your localhost IPs (`127.0.0.1` and `0.0.0.0`) are allowed by default.
-
-## API Keys
-
-In addition to the authentication methods above, the `REST_Controller` class also supports the use of API keys. Enabling API keys is easy. Turn it on in your **config/rest.php** file:
-
-```php
-$config['rest_enable_keys'] = TRUE;
-```
-
-You'll need to create a new database table to store and access the keys. `REST_Controller` will automatically assume you have a table that looks like this:
-
-```sql
-CREATE TABLE `keys` (
-	`id` INT(11) NOT NULL AUTO_INCREMENT,
-	`key` VARCHAR(40) NOT NULL,
-	`level` INT(2) NOT NULL,
-	`ignore_limits` TINYINT(1) NOT NULL DEFAULT '0',
-	`date_created` INT(11) NOT NULL,
-	PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-```
-
-The class will look for an HTTP header with the API key on each request. An invalid or missing API key will result in an `HTTP 403 Forbidden`.
-
-By default, the HTTP will be `X-API-KEY`. This can be configured in **config/rest.php**.
-
-```bash
-$ curl -X POST -H "X-API-KEY: some_key_here" http://example.com/books
-```
-## Profiling
-Codeigniter Profiler feature has been added to the library, so that you can use the power of CI profiler in your project just by setting config parameter to enable profile through out your application
-Turn it on in your **config/config.php** file:
-
-```php
-TRUE to turn profile ON, FALSE to turn it off
-$config['enable_profiling'] = FALSE;
-```
-Also you need to enable `hooks` in your config.php that looks like this
-```php
-$config['enable_hooks'] = TRUE;
-```
-Also you can refer to **config/config.php.sample** 
-
-## Other Documentation / Tutorials
-
-* [NetTuts: Working with RESTful Services in CodeIgniter](http://net.tutsplus.com/tutorials/php/working-with-restful-services-in-codeigniter-2/)
-
-## Contributions
-
-This project was originally written by Phil Sturgeon, however his involvement has shifted
-as he is no longer using it.  As of 2013/11/20 further development and support will be done by Chris Kacerguis.
-
-Pull Requests are the best way to fix bugs or add features. I know loads of you use this, so please
-contribute if you have improvements to be made and I'll keep releasing versions over time.
+Don't forget to keep and eye on Aauth, we are constantly improving the system.
+You can also contribute and help me out. :)
