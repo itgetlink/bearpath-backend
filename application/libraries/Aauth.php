@@ -656,46 +656,80 @@ class Aauth {
 	 * @param string $username User's username
 	 * @return int|bool False if create fails or returns user id if successful
 	 */
-	public function create_user($email, $pass, $username = FALSE) {
+	public function create_user($email = FALSE, $pass, $username, $alamat = FALSE, $no_hp = FALSE,
+			$nama_lengkap = FALSE, $group_id = FALSE) {
 
 		$valid = TRUE;
 
 		if($this->config_vars['login_with_name'] == TRUE){
 			if (empty($username)){
-				$this->error($this->CI->lang->line('aauth_error_username_required'));
+				$this->error("username is required");
 				$valid = FALSE;
 			}
 		}
-		if ($this->user_exist_by_username($username) && $username != FALSE) {
-			$this->error($this->CI->lang->line('aauth_error_username_exists'));
-			$valid = FALSE;
+
+		if($group_id == "3" || $group_id == 3 || $group_id == FALSE){
+			if($nama_lengkap == FALSE){
+				$this->error("nama lengkap is required");
+				return FALSE;
+			}
+
+			if($email == FALSE){
+				$this->error("email is required");
+				return FALSE;
+			}
+
+			if($no_hp == FALSE){
+				$this->error("no hp is required");
+				return FALSE;
+			}
+
+			if($alamat == FALSE){
+				$this->error("alamat is required");
+				return FALSE;
+			}
 		}
 
-		if ($this->user_exist_by_email($email)) {
-			$this->error($this->CI->lang->line('aauth_error_email_exists'));
-			$valid = FALSE;
+		if ($this->user_exist_by_username($username)) {
+			$this->error("username already exist");
+			return FALSE;
 		}
-		$valid_email = (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
-		if (!$valid_email){
-			$this->error($this->CI->lang->line('aauth_error_email_invalid'));
-			$valid = FALSE;
+
+		if ($this->user_exist_by_no_hp($no_hp) && $no_hp != FALSE) {
+			$this->error("no_hp already exist");
+			return FALSE;
 		}
+
+		if ($email != FALSE) {
+			if($this->user_exist_by_email($email)){
+				$this->error("email already exist");
+				return FALSE;
+			}else{
+				$valid_email = (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
+
+				if (!$valid_email){
+					$this->error("invalid email format");
+					return FALSE;
+				}
+			}
+		}
+		
 		if ( strlen($pass) < $this->config_vars['min'] OR strlen($pass) > $this->config_vars['max'] ){
-			$this->error($this->CI->lang->line('aauth_error_password_invalid'));
-			$valid = FALSE;
+			$this->error("invalid password format");
+			return FALSE;
 		}
 		if ($username != FALSE && !ctype_alnum(str_replace($this->config_vars['additional_valid_chars'], '', $username))){
-			$this->error($this->CI->lang->line('aauth_error_username_invalid'));
-			$valid = FALSE;
-		}
-		if (!$valid) {
-			return FALSE; 
+			$this->error("invalid username format");
+			return FALSE;
 		}
 
 		$data = array(
-			'email' => $email,
+			'email' => (!$email) ? NULL : $email,
+			'no_hp' => (!$no_hp) ? NULL : $no_hp,
+			'alamat' => (!$alamat) ? NULL : $alamat,
+			'nama_lengkap' => (!$nama_lengkap) ? NULL : $nama_lengkap,
 			'pass' => $this->hash_password($pass, 0), // Password cannot be blank but user_id required for salt, setting bad password for now
-			'username' => (!$username) ? '' : $username ,
+			'username' => $username ,
 			'date_created' => date("Y-m-d H:i:s"),
 		);
 
@@ -703,8 +737,12 @@ class Aauth {
 
 			$user_id = $this->aauth_db->insert_id();
 
-			// set default group
-			$this->add_member($user_id, $this->config_vars['default_group']);
+			if($group_id == FALSE){
+				// set default group
+				$this->add_member($user_id, $this->config_vars['default_group']);
+			}else{
+				$this->add_member($user_id, $group_id);
+			}
 
 			// if verification activated
 			if($this->config_vars['verification'] && !$this->is_admin()){
@@ -1062,6 +1100,24 @@ class Aauth {
 	 */
 	public function user_exist_by_email( $user_email ) {
 		$query = $this->aauth_db->where('email', $user_email);
+
+		$query = $this->aauth_db->get($this->config_vars['users']);
+
+		if ($query->num_rows() > 0)
+			return TRUE;
+		else
+			return FALSE;
+	}
+
+	/**
+	 * user_exist_by_no_hp
+	 * Check if user exist by user no_hp
+	 * @param $user_no_hp
+	 *
+	 * @return bool
+	 */
+	public function user_exist_by_no_hp( $no_hp ) {
+		$query = $this->aauth_db->where('no_hp', $no_hp);
 
 		$query = $this->aauth_db->get($this->config_vars['users']);
 
