@@ -50,4 +50,24 @@ require APPPATH . 'libraries/REST_Controller.php';
             $this->set_response($message, 422);
         }
     }
+
+    public function login_post(){
+        $username = $this->post('username');
+        $password = $this->post('password');
+        $isremember = $this->post('isremember');
+
+        if($this->aauth->login($username, $password, $isremember)){
+            $message = [
+                'message' => 'login success'
+            ];
+            
+            $this->set_response($message, REST_Controller::HTTP_CREATED);
+        }else{
+            $message = [
+                'message' => $this->aauth->errors[count($this->aauth->errors)-1]
+            ];
+            
+            $this->set_response($message, 401);
+        }
+    }
  }
