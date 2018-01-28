@@ -470,7 +470,7 @@ class Aauth {
 			$row = $query->row();
 
 			$ver_code = sha1(strtotime("now"));
-
+			
 			$data['verification_code'] = $ver_code;
 
 			$this->aauth_db->where('email', $email);

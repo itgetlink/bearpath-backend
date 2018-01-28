@@ -69,35 +69,35 @@ class CI_Email {
 	 *
 	 * @var	string	'mail', 'sendmail' or 'smtp'
 	 */
-	public $protocol	= 'mail';		// mail/sendmail/smtp
+	public $protocol	= 'smtp';		// mail/sendmail/smtp
 
 	/**
 	 * STMP Server host
 	 *
 	 * @var	string
 	 */
-	public $smtp_host	= '';
+	public $smtp_host	= 'ssl://smtp.googlemail.com';
 
 	/**
 	 * SMTP Username
 	 *
 	 * @var	string
 	 */
-	public $smtp_user	= '';
+	public $smtp_user	= 'xstepnort@gmail.com';
 
 	/**
 	 * SMTP Password
 	 *
 	 * @var	string
 	 */
-	public $smtp_pass	= '';
+	public $smtp_pass	= 'faruqanaksoleh';
 
 	/**
 	 * SMTP Server port
 	 *
 	 * @var	int
 	 */
-	public $smtp_port	= 25;
+	public $smtp_port	= 465;
 
 	/**
 	 * SMTP connection timeout in seconds
@@ -1706,6 +1706,7 @@ class CI_Email {
 				$this->clear();
 			}
 
+			var_dump($result);
 			return $result;
 		}
 
@@ -1824,6 +1825,8 @@ class CI_Email {
 
 		$protocol = $this->_get_protocol();
 		$method   = '_send_with_'.$protocol;
+		
+		var_dump(! $this->$method());
 		if ( ! $this->$method())
 		{
 			$this->_set_error_message('lang:email_send_failure_'.($protocol === 'mail' ? 'phpmail' : $protocol));

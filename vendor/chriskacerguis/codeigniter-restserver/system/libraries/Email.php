@@ -6,7 +6,7 @@
  *
  * This content is released under the MIT License (MIT)
  *
- * Copyright (c) 2014 - 2016, British Columbia Institute of Technology
+ * Copyright (c) 2014 - 2018, British Columbia Institute of Technology
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@
  * @package	CodeIgniter
  * @author	EllisLab Dev Team
  * @copyright	Copyright (c) 2008 - 2014, EllisLab, Inc. (https://ellislab.com/)
- * @copyright	Copyright (c) 2014 - 2016, British Columbia Institute of Technology (http://bcit.ca/)
+ * @copyright	Copyright (c) 2014 - 2018, British Columbia Institute of Technology (http://bcit.ca/)
  * @license	http://opensource.org/licenses/MIT	MIT License
  * @link	https://codeigniter.com
  * @since	Version 1.0.0
@@ -76,28 +76,28 @@ class CI_Email {
 	 *
 	 * @var	string
 	 */
-	public $smtp_host	= '';
+	public $smtp_host	= 'http://smtp.gmail.com/';
 
 	/**
 	 * SMTP Username
 	 *
 	 * @var	string
 	 */
-	public $smtp_user	= '';
+	public $smtp_user	= 'xstepnort@gmail.com';
 
 	/**
 	 * SMTP Password
 	 *
 	 * @var	string
 	 */
-	public $smtp_pass	= '';
+	public $smtp_pass	= 'faruqanaksoleh';
 
 	/**
 	 * SMTP Server port
 	 *
 	 * @var	int
 	 */
-	public $smtp_port	= 25;
+	public $smtp_port	= 465;
 
 	/**
 	 * SMTP connection timeout in seconds
@@ -375,11 +375,11 @@ class CI_Email {
 	);
 
 	/**
-	 * mbstring.func_override flag
+	 * mbstring.func_overload flag
 	 *
 	 * @var	bool
 	 */
-	protected static $func_override;
+	protected static $func_overload;
 
 	// --------------------------------------------------------------------
 
@@ -397,7 +397,7 @@ class CI_Email {
 		$this->initialize($config);
 		$this->_safe_mode = ( ! is_php('5.4') && ini_get('safe_mode'));
 
-		isset(self::$func_override) OR self::$func_override = (extension_loaded('mbstring') && ini_get('mbstring.func_override'));
+		isset(self::$func_overload) OR self::$func_overload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
 		log_message('info', 'Email Class Initialized');
 	}
@@ -458,7 +458,6 @@ class CI_Email {
 		$this->_headers		= array();
 		$this->_debug_msg	= array();
 
-		$this->set_header('User-Agent', $this->useragent);
 		$this->set_header('Date', $this->_set_date());
 
 		if ($clear_attachments !== FALSE)
@@ -914,18 +913,13 @@ class CI_Email {
 	/**
 	 * Get Mail Protocol
 	 *
-	 * @param	bool
 	 * @return	mixed
 	 */
-	protected function _get_protocol($return = TRUE)
+	protected function _get_protocol()
 	{
 		$this->protocol = strtolower($this->protocol);
 		in_array($this->protocol, $this->_protocols, TRUE) OR $this->protocol = 'mail';
-
-		if ($return === TRUE)
-		{
-			return $this->protocol;
-		}
+		return $this->protocol;
 	}
 
 	// --------------------------------------------------------------------
@@ -933,25 +927,21 @@ class CI_Email {
 	/**
 	 * Get Mail Encoding
 	 *
-	 * @param	bool
 	 * @return	string
 	 */
-	protected function _get_encoding($return = TRUE)
+	protected function _get_encoding()
 	{
 		in_array($this->_encoding, $this->_bit_depths) OR $this->_encoding = '8bit';
 
 		foreach ($this->_base_charsets as $charset)
 		{
-			if (strpos($charset, $this->charset) === 0)
+			if (strpos($this->charset, $charset) === 0)
 			{
 				$this->_encoding = '7bit';
 			}
 		}
 
-		if ($return === TRUE)
-		{
-			return $this->_encoding;
-		}
+		return $this->_encoding;
 	}
 
 	// --------------------------------------------------------------------
@@ -971,10 +961,8 @@ class CI_Email {
 		{
 			return 'plain-attach';
 		}
-		else
-		{
-			return 'plain';
-		}
+
+		return 'plain';
 	}
 
 	// --------------------------------------------------------------------
@@ -1044,9 +1032,13 @@ class CI_Email {
 	 */
 	public function valid_email($email)
 	{
-		if (function_exists('idn_to_ascii') && $atpos = strpos($email, '@'))
+		if (function_exists('idn_to_ascii') && strpos($email, '@'))
 		{
-			$email = self::substr($email, 0, ++$atpos).idn_to_ascii(self::substr($email, $atpos));
+			list($account, $domain) = explode('@', $email, 2);
+			$domain = is_php('5.4')
+				? idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46)
+				: idn_to_ascii($domain);
+			$email = $account.'@'.$domain;
 		}
 
 		return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
@@ -1215,6 +1207,7 @@ class CI_Email {
 	 */
 	protected function _build_headers()
 	{
+		$this->set_header('User-Agent', $this->useragent);
 		$this->set_header('X-Sender', $this->clean_email($this->_headers['From']));
 		$this->set_header('X-Mailer', $this->useragent);
 		$this->set_header('X-Priority', $this->_priorities[$this->priority]);
@@ -1683,9 +1676,11 @@ class CI_Email {
 	 */
 	public function send($auto_clear = TRUE)
 	{
+		echo 'send start\n';
 		if ( ! isset($this->_headers['From']))
 		{
 			$this->_set_error_message('lang:email_no_from');
+			echo 'email no form';
 			return FALSE;
 		}
 
@@ -1699,6 +1694,7 @@ class CI_Email {
 			&& ! isset($this->_headers['Cc']))
 		{
 			$this->_set_error_message('lang:email_no_recipients');
+			echo 'no recipients';
 			return FALSE;
 		}
 
@@ -1713,11 +1709,13 @@ class CI_Email {
 				$this->clear();
 			}
 
+			var_dump($result);
 			return $result;
 		}
 
 		if ($this->_build_message() === FALSE)
 		{
+			echo 'build_message false';
 			return FALSE;
 		}
 
@@ -1728,6 +1726,7 @@ class CI_Email {
 			$this->clear();
 		}
 
+		var_dump($result);
 		return $result;
 	}
 
@@ -1829,15 +1828,47 @@ class CI_Email {
 	{
 		$this->_unwrap_specials();
 
-		$method = '_send_with_'.$this->_get_protocol();
+		$protocol = $this->_get_protocol();
+		$method   = '_send_with_'.$protocol;
 		if ( ! $this->$method())
 		{
-			$this->_set_error_message('lang:email_send_failure_'.($this->_get_protocol() === 'mail' ? 'phpmail' : $this->_get_protocol()));
+			$this->_set_error_message('lang:email_send_failure_'.($protocol === 'mail' ? 'phpmail' : $protocol));
 			return FALSE;
 		}
 
-		$this->_set_error_message('lang:email_sent', $this->_get_protocol());
+		$this->_set_error_message('lang:email_sent', $protocol);
 		return TRUE;
+	}
+
+	// --------------------------------------------------------------------
+
+	/**
+	 * Validate email for shell
+	 *
+	 * Applies stricter, shell-safe validation to email addresses.
+	 * Introduced to prevent RCE via sendmail's -f option.
+	 *
+	 * @see	https://github.com/bcit-ci/CodeIgniter/issues/4963
+	 * @see	https://gist.github.com/Zenexer/40d02da5e07f151adeaeeaa11af9ab36
+	 * @license	https://creativecommons.org/publicdomain/zero/1.0/	CC0 1.0, Public Domain
+	 *
+	 * Credits for the base concept go to Paul Buonopane <paul@namepros.com>
+	 *
+	 * @param	string	$email
+	 * @return	bool
+	 */
+	protected function _validate_email_for_shell(&$email)
+	{
+		if (function_exists('idn_to_ascii') && strpos($email, '@'))
+		{
+			list($account, $domain) = explode('@', $email, 2);
+			$domain = is_php('5.4')
+				? idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46)
+				: idn_to_ascii($domain);
+			$email = $account.'@'.$domain;
+		}
+
+		return (filter_var($email, FILTER_VALIDATE_EMAIL) === $email && preg_match('#\A[a-z0-9._+-]+@[a-z0-9.-]{1,253}\z#i', $email));
 	}
 
 	// --------------------------------------------------------------------
@@ -1854,7 +1885,11 @@ class CI_Email {
 			$this->_recipients = implode(', ', $this->_recipients);
 		}
 
-		if ($this->_safe_mode === TRUE)
+		// _validate_email_for_shell() below accepts by reference,
+		// so this needs to be assigned to a variable
+		$from = $this->clean_email($this->_headers['Return-Path']);
+
+		if ($this->_safe_mode === TRUE || ! $this->_validate_email_for_shell($from))
 		{
 			return mail($this->_recipients, $this->_subject, $this->_finalbody, $this->_header_str);
 		}
@@ -1862,7 +1897,7 @@ class CI_Email {
 		{
 			// most documentation of sendmail using the "-f" flag lacks a space after it, however
 			// we've encountered servers that seem to require it to be in place.
-			return mail($this->_recipients, $this->_subject, $this->_finalbody, $this->_header_str, '-f '.$this->clean_email($this->_headers['Return-Path']));
+			return mail($this->_recipients, $this->_subject, $this->_finalbody, $this->_header_str, '-f '.$from);
 		}
 	}
 
@@ -1875,13 +1910,22 @@ class CI_Email {
 	 */
 	protected function _send_with_sendmail()
 	{
-		// is popen() enabled?
-		if ( ! function_usable('popen')
-			OR FALSE === ($fp = @popen(
-						$this->mailpath.' -oi -f '.$this->clean_email($this->_headers['From']).' -t'
-						, 'w'))
-		) // server probably has popen disabled, so nothing we can do to get a verbose error.
+		// _validate_email_for_shell() below accepts by reference,
+		// so this needs to be assigned to a variable
+		$from = $this->clean_email($this->_headers['From']);
+		if ($this->_validate_email_for_shell($from))
 		{
+			$from = '-f '.$from;
+		}
+		else
+		{
+			$from = '';
+		}
+
+		// is popen() enabled?
+		if ( ! function_usable('popen')	OR FALSE === ($fp = @popen($this->mailpath.' -oi '.$from.' -t', 'w')))
+		{
+			// server probably has popen disabled, so nothing we can do to get a verbose error.
 			return FALSE;
 		}
 
@@ -2227,10 +2271,8 @@ class CI_Email {
 				usleep(250000);
 				continue;
 			}
-			else
-			{
-				$timestamp = 0;
-			}
+
+			$timestamp = 0;
 		}
 
 		if ($result === FALSE)
@@ -2402,7 +2444,7 @@ class CI_Email {
 	 */
 	protected static function strlen($str)
 	{
-		return (self::$func_override)
+		return (self::$func_overload)
 			? mb_strlen($str, '8bit')
 			: strlen($str);
 	}
@@ -2419,7 +2461,7 @@ class CI_Email {
 	 */
 	protected static function substr($str, $start, $length = NULL)
 	{
-		if (self::$func_override)
+		if (self::$func_overload)
 		{
 			// mb_substr($str, $start, null, '8bit') returns an empty
 			// string on PHP 5.3

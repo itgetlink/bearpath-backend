@@ -61,13 +61,29 @@ require APPPATH . 'libraries/REST_Controller.php';
                 'message' => 'login success'
             ];
             
-            $this->set_response($message, REST_Controller::HTTP_CREATED);
+            $this->set_response($message, REST_Controller::HTTP_OK);
         }else{
             $message = [
                 'message' => $this->aauth->errors[count($this->aauth->errors)-1]
             ];
             
             $this->set_response($message, 401);
+        }
+    }
+
+    public function forgotpass_get(){
+        if($this->aauth->remind_password($this->aauth->get_user()->email)){
+            $message = [
+                'message' => 'verification code sent successfully'
+            ];
+            
+            $this->set_response($message, REST_Controller::HTTP_OK);
+        }else{
+            $message = [
+                'message' => $this->aauth->errors[count($this->aauth->errors)-1]
+            ];
+            
+            $this->set_response($message, 400);
         }
     }
  }
